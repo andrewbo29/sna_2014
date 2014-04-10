@@ -2,7 +2,7 @@ import re
 
 REMOVE_CHARS = ''.join(['.', ',', '!', '?', ';', ':', '-', '*', '(', ')', '[', ']', '{', '}', '\\', '/', '@', '#',
                         '$', '%', '^', '+', '=', '`', '~', '"', '\'', '|'])
-NUMBER_FREQ_WORDS = 1000
+NUMBER_FREQ_WORDS = 100
 RARE_WORDS_NUMBER = 10
 
 RE_IM = re.compile('Images\\[[0-9]+')
@@ -117,6 +117,15 @@ def get_text_features(text, words_number_dict):
             else:
                 is_end_sentence = False
 
+            features_vector[9] += len(word)
+
+            features_vector[10] += 1
+
+            number_smile += len(RE_SMILE.findall(word))
+            number_sad += len(RE_SAD.findall(word))
+
+            features_vector[8] += len(RE_MARKS.findall(word))
+
             num_match_images = len(RE_IM.findall(word))
             if num_match_images != 0:
                 features_vector[0] += num_match_images
@@ -166,18 +175,8 @@ def get_text_features(text, words_number_dict):
                 features_vector[6] += 1
                 continue
 
-            number_smile += len(RE_SMILE.findall(word))
-            number_sad += len(RE_SAD.findall(word))
-
-            features_vector[8] += len(RE_MARKS.findall(word))
-
-            features_vector[9] += len(word)
-
-            features_vector[10] += 1
-
             word = unicode(word.translate(None, REMOVE_CHARS), 'utf8').lower()
             if word not in words_number_dict or words_number_dict[word] <= RARE_WORDS_NUMBER:
-                # print(word)
                 features_vector[12] += 1
 
     features_vector[7] += abs(number_smile - number_sad)
@@ -198,15 +197,13 @@ def get_freq_words_features(text, most_freq_words):
     return features_vector
 
 
-def text_feature_detector(data_filename, words_dict_filename):
+def text_features_detector(data_filename, words_dict_filename):
     words_dict = read_dict(words_dict_filename)
     words_number_dict = {unicode(key, 'utf8'): words_dict[key] for key in words_dict}
 
-    freq_words = sorted(words_number_dict, key=words_number_dict.get, reverse=True)[:NUMBER_FREQ_WORDS]
-
     data_file = open(data_filename)
     features_dic = {}
-    print('Extracting features')
+    print('Extracting text features')
     post_num = 1
     for post in data_file:
         if not (post_num % 10000):
@@ -215,8 +212,30 @@ def text_feature_detector(data_filename, words_dict_filename):
             post_data = post.strip().split('\t')
             if len(post_data) == 4:
                 post_text = post_data[3]
-                features_dic[int(post_data[1])] = \
-                    get_text_features(post_text, words_number_dict) + get_freq_words_features(post_text, freq_words)
+                features_dic[int(post_data[1])] = get_text_features(post_text, words_number_dict)
+        post_num += 1
+    data_file.close()
+    return features_dic
+
+
+def freq_words_features_detector(data_filename, words_dict_filename):
+    words_dict = read_dict(words_dict_filename)
+    words_number_dict = {unicode(key, 'utf8'): words_dict[key] for key in words_dict}
+
+    freq_words = sorted(words_number_dict, key=words_number_dict.get, reverse=True)[:NUMBER_FREQ_WORDS]
+
+    data_file = open(data_filename)
+    features_dic = {}
+    print('Extracting frequent words features')
+    post_num = 1
+    for post in data_file:
+        if not (post_num % 10000):
+            print(post_num)
+        if post:
+            post_data = post.strip().split('\t')
+            if len(post_data) == 4:
+                post_text = post_data[3]
+                features_dic[int(post_data[1])] = get_freq_words_features(post_text, freq_words)
         post_num += 1
     data_file.close()
     return features_dic
@@ -251,16 +270,22 @@ def write_features(dic_features, features_filename):
 
 words_number_dict_filename = '../data/words_number_dict.txt'
 
-train_data_filename = '../data/train_content_val_10.txt'
-train_data_feature_filename = '../data/features/train_content_features_val_10.txt'
+train_data_filename = '../data/train_content_val.txt'
+train_text_features_filename = '../data/features/train_features_val_text.txt'
+train_freq_words_features_filename = '../data/features/train_features_val_freq_words.txt'
 
 test_data_filename = '../data/val_content.txt'
-test_data_feature_filename = '../data/features/val_content_features.txt'
+test_text_features_filename = '../data/features/val_features_text.txt'
+test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
 
-# make_words_number_dict(train_data_filename)
+make_words_number_dict(train_data_filename)
 
-features_train = text_feature_detector(train_data_filename, words_number_dict_filename)
-write_features(features_train, train_data_feature_filename)
+text_features_train = text_features_detector(train_data_filename, words_number_dict_filename)
+write_features(text_features_train, train_text_features_filename)
+freq_words_features_train = freq_words_features_detector(train_data_filename, words_number_dict_filename)
+write_features(freq_words_features_train, train_freq_words_features_filename)
 
-# features_test = text_feature_detector(test_data_filename, words_number_dict_filename)
-# write_features(features_test, test_data_feature_filename)
+text_features_test = text_features_detector(test_data_filename, words_number_dict_filename)
+write_features(text_features_test, test_text_features_filename)
+freq_words_features_test = freq_words_features_detector(test_data_filename, words_number_dict_filename)
+write_features(freq_words_features_test, test_freq_words_features_filename)

@@ -112,6 +112,18 @@ def get_posts(data_filename):
     data_file.close()
 
 
+def get_post_data(data_filename, post_number):
+    data_file = open(data_filename)
+    path = os.path.dirname(data_filename)
+    filename = '/post_%s.txt' % post_number
+    post_file = open(path + filename, 'w')
+    for post in data_file:
+        words = post.strip().split('\t')
+        if int(words[1]) == post_number:
+            post_file.write(post)
+            return
+
+
 def replace_minus_to_zero(data_filename, new_data_filename):
     data_file = open(data_filename)
     new_data_file = open(new_data_filename, 'w')
@@ -127,17 +139,12 @@ def replace_minus_to_zero(data_filename, new_data_filename):
     new_data_file.close()
 
 
-train_content_filename = '../data/train_content_val.txt'
+train_content_filename = '../data/train_content.csv'
 new_train_content_filename = '../data/train_content_val_10.txt'
 train_likes_count_filename = '../data/train_likes_count.csv'
 
-# break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
+break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
 
-make_small_data_set(train_content_filename, '../data/train_content_val_400.txt', 1, 400)
+# make_small_data_set(train_content_filename, '../data/train_content_val_10000.txt', 1, 10000)
 
-# print(get_data_number('../data/train_content_val.txt'), get_data_number('../data/train_likes_count_val.txt'))
-# print(get_data_number('../data/val_content.txt'), get_data_number('../data/val_likes_count.txt'))
-
-# replace_minus_to_zero('../data/result/test_likes_count.txt', '../data/result/new_test_likes_count.txt')
-
-# make_small_rand_data('../data/train_content.csv', '../data/train_content_rand_20.txt', 30)
+# get_post_data(train_content_filename, 438)

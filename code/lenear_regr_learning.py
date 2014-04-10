@@ -15,7 +15,7 @@ def read_features(features_filename):
         line = l.strip()
         if line:
             features = line.split()
-            features_dict[int(features[0])] = [float(feature) for feature in features[1:]]
+            features_dict[int(features[0])] = [float(f) for f in features[1:]]
             features_num += 1
     features_file.close()
 
@@ -45,6 +45,13 @@ def read_data(features_filename, likes_filename):
     return features, likes
 
 
+def join_text_freq_features(text_features, freq_words_features):
+    print('Join text and frequent words features')
+    join_features_dict = {post_id: text_features[post_id] + freq_words_features[post_id] for post_id in text_features if
+                          post_id in freq_words_features}
+    return join_features_dict
+
+
 def add_artificial_param(data_list):
     new_data_list = []
     for data in data_list:
@@ -55,27 +62,19 @@ def add_artificial_param(data_list):
 def add_poly_param(data_list, poly_degree):
     new_data_list = []
     for data in data_list:
-        new_data_list.append([x ** deg for x in data for deg in range(1, poly_degree+1)])
+        new_data_list.append([x ** deg for x in data for deg in range(1, poly_degree + 1)])
     return new_data_list
 
 
 def normalize_data(data_list):
     new_data_list = []
+    num = 0
     for data in data_list:
-        new_data = []
-        for x in data:
-            if x > 20:
-                new_data.append(math.log(x))
-            else:
-                new_data.append(x)
+        print(data)
+        num += 1
+        new_data = data_list[data]
+        new_data[11] = math.log(new_data[11])
         new_data_list.append(new_data)
-    return new_data_list
-
-
-def normalize_data_all(data_list):
-    new_data_list = []
-    for data in data_list:
-        new_data_list.append([math.log(x) for x in data])
     return new_data_list
 
 
@@ -121,39 +120,47 @@ def error_and_score(true_likes_filename, predict_likes_filename):
     return err, r_sq
 
 
-train_data_feature_filename = '../data/features/train_content_features_val.txt'
-train_data_likes_filename = '../data/train_likes_count_val.txt'
+train_text_features_filename = '../data/features/train_features_val_text.txt'
+train_freq_words_features_filename = '../data/features/train_features_val_freq_words.txt'
 
-test_data_feature_filename = '../data/features/val_content_features.txt'
-val_likes_count_filename = '../data/val_likes_count.txt'
+train_likes_filename = '../data/train_likes_count_val.txt'
+
+test_text_features_filename = '../data/features/val_features_text.txt'
+test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
+
+val_likes_filename = '../data/val_likes_count.txt'
 
 predict_in_filename = '../data/result/predict_likes_count_in.txt'
 predict_out_filename = '../data/result/predict_likes_count_out.txt'
 
-train_features_dict, train_likes = read_data(train_data_feature_filename, train_data_likes_filename)
-test_features_dict = read_features(test_data_feature_filename)
+train_text_features_dict, train_likes = read_data(train_text_features_filename, train_likes_filename)
+train_freq_words_features_dict = read_features(train_freq_words_features_filename)
+test_text_features_dict = read_features(test_text_features_filename)
+test_freq_words_features_dict = read_features(test_freq_words_features_filename)
 
-X_train = add_artificial_param(train_features_dict.values())
-X_test = add_artificial_param(test_features_dict.values())
+train_features_dict = join_text_freq_features(train_text_features_dict, train_freq_words_features_dict)
+test_features_dict = join_text_freq_features(test_text_features_dict, test_freq_words_features_dict)
 
-# X_train = add_artificial_param(normalize_data(train_features_dict.values()))
-# X_test = add_artificial_param(normalize_data(test_features_dict.values()))
+# X_train = add_artificial_param(train_features_dict.values())
+# X_test = add_artificial_param(test_features_dict.values())
+
+X_train = add_artificial_param(normalize_data(train_text_features_dict))
+X_test = add_artificial_param(normalize_data(test_text_features_dict.values()))
 #
-# X_train = add_artificial_param(add_poly_param(train_features_dict.values(), 7))
-# X_test = add_artificial_param(add_poly_param(test_features_dict.values(), 7))
+# X_train = add_artificial_param(add_poly_param(train_features_dict.values(), 3))
+# X_test = add_artificial_param(add_poly_param(test_features_dict.values(), 3))
 
-y_train = train_likes
-
-print('Start learning')
-learn_alg = linear_model.LinearRegression()
-learn_alg.fit(X_train, y_train)
-
-
-print('Start predictions')
-prediction_in = learn_alg.predict(X_train)
-write_prediction(prediction_in, train_features_dict.keys(), predict_in_filename)
-prediction_out = learn_alg.predict(X_test)
-write_prediction(prediction_out, test_features_dict.keys(), predict_out_filename)
-
-print('Error in: %s, Score in: %s' % error_and_score(train_data_likes_filename, predict_in_filename))
-print('Error val: %s, Score val: %s' % error_and_score(val_likes_count_filename, predict_out_filename))
+# y_train = train_likes
+#
+# print('Start learning')
+# learn_alg = linear_model.LinearRegression()
+# learn_alg.fit(X_train, y_train)
+#
+# print('Start predictions')
+# prediction_in = learn_alg.predict(X_train)
+# write_prediction(prediction_in, train_features_dict.keys(), predict_in_filename)
+# prediction_out = learn_alg.predict(X_test)
+# write_prediction(prediction_out, test_features_dict.keys(), predict_out_filename)
+#
+# print('Error in: %s, Score in: %s' % error_and_score(train_likes_filename, predict_in_filename))
+# print('Error val: %s, Score val: %s' % error_and_score(val_likes_filename, predict_out_filename))
