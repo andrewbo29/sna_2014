@@ -1,4 +1,5 @@
 from sklearn import linear_model
+from sklearn.svm import SVR
 import numpy as np
 import math
 
@@ -22,6 +23,26 @@ def read_features(features_filename):
     return features_dict
 
 
+def read_group_features(group_features_filename):
+    print('Read group features')
+    group_features_file = open(group_features_filename)
+    group_features_dict = {}
+
+    features_num = 0
+    group_features_file.readline()
+    for l in group_features_file:
+        if not (features_num % 10000):
+            print(features_num)
+        line = l.strip()
+        if line:
+            group_features = line.split(',')
+            group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
+            features_num += 1
+    group_features_file.close()
+
+    return group_features_dict
+
+
 def read_likes(likes_filename):
     likes_file = open(likes_filename)
     likes = {}
@@ -36,19 +57,54 @@ def read_likes(likes_filename):
     return likes
 
 
-def read_data(features_filename, likes_filename):
-    all_likes = read_likes(likes_filename)
+def read_data(features_text_filename, features_freq_words_filename, features_group_filename, likes_filename, is_text,
+              is_freq_words, is_group):
+    if likes_filename:
+        all_likes = read_likes(likes_filename)
 
-    features = read_features(features_filename)
-    likes = [all_likes[post_id] for post_id in features if post_id in all_likes]
+    if is_text:
+        features_text = read_features(features_text_filename)
+    if is_freq_words:
+        features_freq_words = read_features(features_freq_words_filename)
+    if is_group:
+        features_group = read_group_features(features_group_filename)
 
-    return features, likes
+    join_features_dict = {}
+    if is_text and is_freq_words and is_group:
+        print('Join text, frequent words and group features')
+        join_features_dict = {post_id: features_text[post_id] + features_freq_words[post_id] + features_group[post_id]
+                              for post_id in features_text if
+                              post_id in features_freq_words and post_id in features_group}
+    elif is_text and is_freq_words:
+        print('Join text and frequent words')
+        join_features_dict = {post_id: features_text[post_id] + features_freq_words[post_id] for post_id in
+                              features_text if post_id in features_freq_words}
+    elif is_text and is_group:
+        print('Join text and group features')
+        join_features_dict = {post_id: features_text[post_id] + features_group[post_id] for post_id in features_text if
+                              post_id in features_group}
+    elif is_freq_words and is_group:
+        print('Join frequent words and group features')
+        join_features_dict = {post_id: features_freq_words[post_id] + features_group[post_id] for post_id in
+                              features_freq_words if post_id in features_group}
+    elif is_text:
+        join_features_dict = features_text
+    elif is_freq_words:
+        join_features_dict = features_freq_words
+    elif is_group:
+        join_features_dict = features_group
+
+    if likes_filename:
+        likes = [all_likes[post_id] for post_id in join_features_dict if post_id in all_likes]
+        return join_features_dict, likes
+    else:
+        return join_features_dict
 
 
-def join_text_freq_features(text_features, freq_words_features):
-    print('Join text and frequent words features')
-    join_features_dict = {post_id: text_features[post_id] + freq_words_features[post_id] for post_id in text_features if
-                          post_id in freq_words_features}
+def join_text_freq_features(text_features, freq_words_features, group_features, what_include):
+    print('Join text, frequent words and group features')
+    join_features_dict = {post_id: text_features[post_id] + freq_words_features[post_id] + group_features[post_id] for
+                          post_id in text_features if post_id in freq_words_features}
     return join_features_dict
 
 
@@ -66,14 +122,13 @@ def add_poly_param(data_list, poly_degree):
     return new_data_list
 
 
-def normalize_data(data_list):
+def log_data(data_list, features_to_norm):
+    print('Log features')
     new_data_list = []
-    num = 0
     for data in data_list:
-        print(data)
-        num += 1
-        new_data = data_list[data]
-        new_data[11] = math.log(new_data[11])
+        new_data = data
+        for i in features_to_norm:
+            new_data[i] = math.log(new_data[i])
         new_data_list.append(new_data)
     return new_data_list
 
@@ -112,20 +167,22 @@ def error_and_score(true_likes_filename, predict_likes_filename):
     predict_likes_file.close()
 
     diff = [true_likes[post_id] - predict_likes[post_id] for post_id in true_likes if post_id in predict_likes]
-    sq_diff = [(true_likes[post_id] - predict_likes[post_id]) ** 2 for post_id in true_likes if
-               post_id in predict_likes]
+    # sq_diff = [(true_likes[post_id] - predict_likes[post_id]) ** 2 for post_id in true_likes if
+    #            post_id in predict_likes]
 
-    err = float(sum(sq_diff)) / len(sq_diff)
+    # err = float(sum(sq_diff)) / len(sq_diff)
     r_sq = (1 - np.std(diff) / np.std(true_likes.values())) * 1000
-    return err, r_sq
+    return r_sq
 
 
-train_text_features_filename = '../data/features/train_features_val_text.txt'
+train_text_features_filename = '../data/features/train_features_text.txt'
 train_freq_words_features_filename = '../data/features/train_features_val_freq_words.txt'
+train_group_features_filename = '../data/features/group_features.csv'
 
-train_likes_filename = '../data/train_likes_count_val.txt'
+# train_likes_filename = '../data/train_likes_count_val.txt'
+train_likes_filename = '../data/train_likes_count.csv'
 
-test_text_features_filename = '../data/features/val_features_text.txt'
+test_text_features_filename = '../data/features/test_features_text.txt'
 test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
 
 val_likes_filename = '../data/val_likes_count.txt'
@@ -133,34 +190,40 @@ val_likes_filename = '../data/val_likes_count.txt'
 predict_in_filename = '../data/result/predict_likes_count_in.txt'
 predict_out_filename = '../data/result/predict_likes_count_out.txt'
 
-train_text_features_dict, train_likes = read_data(train_text_features_filename, train_likes_filename)
-train_freq_words_features_dict = read_features(train_freq_words_features_filename)
-test_text_features_dict = read_features(test_text_features_filename)
-test_freq_words_features_dict = read_features(test_freq_words_features_filename)
+use_text = True
+use_freq_words = False
+use_group = False
 
-train_features_dict = join_text_freq_features(train_text_features_dict, train_freq_words_features_dict)
-test_features_dict = join_text_freq_features(test_text_features_dict, test_freq_words_features_dict)
+train_features_dict, train_likes = read_data(train_text_features_filename, train_freq_words_features_filename,
+                                             train_group_features_filename, train_likes_filename,
+                                             is_text=use_text, is_freq_words=use_freq_words, is_group=use_group)
+
+test_features_dict = read_data(test_text_features_filename, test_freq_words_features_filename,
+                               train_group_features_filename, likes_filename=None,
+                               is_text=use_text, is_freq_words=use_freq_words, is_group=use_group)
 
 # X_train = add_artificial_param(train_features_dict.values())
 # X_test = add_artificial_param(test_features_dict.values())
 
-X_train = add_artificial_param(normalize_data(train_text_features_dict))
-X_test = add_artificial_param(normalize_data(test_text_features_dict.values()))
-#
+norm_features_ind = [9]
+X_train = add_artificial_param(log_data(train_features_dict.values(), norm_features_ind))
+X_test = add_artificial_param(log_data(test_features_dict.values(), norm_features_ind))
+
 # X_train = add_artificial_param(add_poly_param(train_features_dict.values(), 3))
 # X_test = add_artificial_param(add_poly_param(test_features_dict.values(), 3))
 
-# y_train = train_likes
-#
-# print('Start learning')
-# learn_alg = linear_model.LinearRegression()
-# learn_alg.fit(X_train, y_train)
-#
-# print('Start predictions')
-# prediction_in = learn_alg.predict(X_train)
-# write_prediction(prediction_in, train_features_dict.keys(), predict_in_filename)
-# prediction_out = learn_alg.predict(X_test)
-# write_prediction(prediction_out, test_features_dict.keys(), predict_out_filename)
-#
-# print('Error in: %s, Score in: %s' % error_and_score(train_likes_filename, predict_in_filename))
-# print('Error val: %s, Score val: %s' % error_and_score(val_likes_filename, predict_out_filename))
+y_train = train_likes
+
+print('Start learning')
+learn_alg = linear_model.LinearRegression()
+# learn_alg = SVR(kernel='poly', C=1e-10, degree=2, verbose=True)
+learn_alg.fit(X_train, y_train)
+
+print('Start predictions')
+prediction_in = learn_alg.predict(X_train)
+write_prediction(prediction_in, train_features_dict.keys(), predict_in_filename)
+prediction_out = learn_alg.predict(X_test)
+write_prediction(prediction_out, test_features_dict.keys(), predict_out_filename)
+
+print('Score in: %s' % error_and_score(train_likes_filename, predict_in_filename))
+# print('Score val: %s' % error_and_score(val_likes_filename, predict_out_filename))

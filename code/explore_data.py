@@ -63,6 +63,7 @@ def break_data_train_val(data_filename, likes_count_filename, val_size):
     path = os.path.dirname(data_filename)
     train_data_file = open(path + '/train_content_val.txt', 'w')
     train_likes_count_file = open(path + '/train_likes_count_val.txt', 'w')
+    train_likes_count_file.write('%s,%s\n' % ('\"post_id\"', "\"likes\""))
     for i in train_rows_ind:
         train_data_file.write('%s' % data[i])
         train_likes_count_file.write('%s' % likes_count[i])
@@ -71,6 +72,7 @@ def break_data_train_val(data_filename, likes_count_filename, val_size):
 
     val_data_file = open(path + '/val_content.txt', 'w')
     val_likes_count_file = open(path + '/val_likes_count.txt', 'w')
+    val_likes_count_file.write('%s,%s\n' % ('\"post_id\"', "\"likes\""))
     for j in val_rows_ind:
         val_data_file.write('%s' % data[j])
         val_likes_count_file.write('%s' % likes_count[j])
@@ -137,6 +139,20 @@ def replace_minus_to_zero(data_filename, new_data_filename):
             new_data_file.write('%s %s\n' % (line[0], new_val))
     data_file.close()
     new_data_file.close()
+
+
+def split_group_features_by_post_id(data_filename, group_features_filename):
+    data_file = open(data_filename)
+    for l in data_file:
+        line = l.strip()
+        if line:
+            words = line.split()
+    group_features_file = open(group_features_filename)
+    for l in group_features_file:
+        line = l.strip()
+        if line:
+            group_features = line.split(',')
+            group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
 
 
 train_content_filename = '../data/train_content.csv'
