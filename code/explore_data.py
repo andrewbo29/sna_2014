@@ -1,5 +1,6 @@
 import random
 import os
+import feature_detector
 
 
 def make_small_data_set(data_filename, new_data_filename, data_number_start, data_number_end):
@@ -126,41 +127,62 @@ def get_post_data(data_filename, post_number):
             return
 
 
-def replace_minus_to_zero(data_filename, new_data_filename):
+def write_post_id(data_filename, post_ids_filename):
     data_file = open(data_filename)
-    new_data_file = open(new_data_filename, 'w')
-    data_file.readline()
-    for l in data_file:
-        if l:
-            line = l.strip().split(',')
-            new_val = float(line[1])
-            if new_val < 0:
-                new_val = 0
-            new_data_file.write('%s %s\n' % (line[0], new_val))
+    post_ids = []
+    for post in data_file:
+        post_data = post.strip().split('\t')
+        if len(post_data) == 4:
+            post_ids.append(int(post_data[1]))
     data_file.close()
-    new_data_file.close()
+
+    post_ids_file = open(post_ids_filename, 'w')
+    for post_id in post_ids:
+        post_ids_file.write('%s\n' % post_id)
+    post_ids_file.close()
 
 
-def split_group_features_by_post_id(data_filename, group_features_filename):
-    data_file = open(data_filename)
-    for l in data_file:
-        line = l.strip()
-        if line:
-            words = line.split()
+def split_group_features_by_post_id(post_ids_filename, group_features_filename, new_group_features_filename):
+    print('Split group features by post ids')
+    print('Prepare post ids')
+    post_ids_file = open(post_ids_filename)
+    post_ids = []
+    for l in post_ids_file:
+        post_ids.append(l.strip())
+    post_ids_file.close()
+
+    print('Split group features')
+    num_features = 1
     group_features_file = open(group_features_filename)
+    group_features_dict = {}
+    group_features_file.readline()
     for l in group_features_file:
+        print(num_features)
+        num_features += 1
         line = l.strip()
         if line:
             group_features = line.split(',')
-            group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
+            group_post_id = int(float(group_features[1]))
+            if group_post_id in post_ids:
+                group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
+    group_features_file.close()
+
+    feature_detector.write_features(group_features_dict, new_group_features_filename)
 
 
-train_content_filename = '../data/train_content.csv'
-new_train_content_filename = '../data/train_content_val_10.txt'
-train_likes_count_filename = '../data/train_likes_count.csv'
+train_content_filename = '../data/train_content_val.txt'
+train_post_ids_filename = '../data/train_post_ids.txt'
+train_group_features_filename = '../data/features/group_features.csv'
 
-break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
+test_content_filename = '../data/val_content.txt'
+test_post_ids_filename = '../data/val_post_ids.txt'
 
-# make_small_data_set(train_content_filename, '../data/train_content_val_10000.txt', 1, 10000)
+# break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
 
-# get_post_data(train_content_filename, 438)
+write_post_id(train_content_filename, train_post_ids_filename)
+write_post_id(test_content_filename, test_post_ids_filename)
+
+split_group_features_by_post_id(train_post_ids_filename, train_group_features_filename,
+                                '../data/features/train_features_val_group.txt')
+split_group_features_by_post_id(test_post_ids_filename, train_group_features_filename,
+                                '../data/features/val_features_group.txt')
