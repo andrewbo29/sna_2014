@@ -268,26 +268,26 @@ def write_features(dic_features, features_filename):
     features_file.close()
 
 
-# words_number_dict_filename = '../data/words_number_dict.txt'
-#
-# train_data_filename = '../data/train_content_val.txt'
-# train_text_features_filename = '../data/features/train_features_val_text.txt'
-# train_freq_words_features_filename = '../data/features/train_features_val_freq_words.txt'
-#
-# test_data_filename = '../data/val_content.txt'
-# test_text_features_filename = '../data/features/val_features_text.txt'
-# test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
-#
-# make_words_number_dict(train_data_filename)
-#
-# print('Train features:')
-# text_features_train = text_features_detector(train_data_filename, words_number_dict_filename)
-# write_features(text_features_train, train_text_features_filename)
-# freq_words_features_train = freq_words_features_detector(train_data_filename, words_number_dict_filename)
-# write_features(freq_words_features_train, train_freq_words_features_filename)
-#
-# print('Test features:')
-# text_features_test = text_features_detector(test_data_filename, words_number_dict_filename)
-# write_features(text_features_test, test_text_features_filename)
-# freq_words_features_test = freq_words_features_detector(test_data_filename, words_number_dict_filename)
-# write_features(freq_words_features_test, test_freq_words_features_filename)
+words_number_dict_filename = '../data/words_number_dict.txt'
+
+train_data_filename = '../data/train_content_val.txt'
+train_text_features_filename = '../data/features/train_features_val_text.txt'
+train_freq_words_features_filename = '../data/features/train_features_val_freq_words.txt'
+
+test_data_filename = '../data/val_content.txt'
+test_text_features_filename = '../data/features/val_features_text.txt'
+test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
+
+make_words_number_dict(train_data_filename)
+
+print('Train features:')
+text_features_train = text_features_detector(train_data_filename, words_number_dict_filename)
+write_features(text_features_train, train_text_features_filename)
+freq_words_features_train = freq_words_features_detector(train_data_filename, words_number_dict_filename)
+write_features(freq_words_features_train, train_freq_words_features_filename)
+
+print('Test features:')
+text_features_test = text_features_detector(test_data_filename, words_number_dict_filename)
+write_features(text_features_test, test_text_features_filename)
+freq_words_features_test = freq_words_features_detector(test_data_filename, words_number_dict_filename)
+write_features(freq_words_features_test, test_freq_words_features_filename)

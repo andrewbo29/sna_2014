@@ -142,32 +142,42 @@ def write_post_id(data_filename, post_ids_filename):
     post_ids_file.close()
 
 
-def split_group_features_by_post_id(post_ids_filename, group_features_filename, new_group_features_filename):
-    print('Split group features by post ids')
-    print('Prepare post ids')
-    post_ids_file = open(post_ids_filename)
-    post_ids = []
-    for l in post_ids_file:
-        post_ids.append(l.strip())
-    post_ids_file.close()
-
-    print('Split group features')
-    num_features = 1
+def read_group_features(group_features_filename):
+    print('Read group features')
     group_features_file = open(group_features_filename)
     group_features_dict = {}
+
+    features_num = 0
     group_features_file.readline()
     for l in group_features_file:
-        print(num_features)
-        num_features += 1
+        if not (features_num % 10000):
+            print(features_num)
         line = l.strip()
         if line:
             group_features = line.split(',')
-            group_post_id = int(float(group_features[1]))
-            if group_post_id in post_ids:
-                group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
+            group_features_dict[int(float(group_features[1]))] = [float(f) for f in group_features[2:]]
+            features_num += 1
     group_features_file.close()
 
-    feature_detector.write_features(group_features_dict, new_group_features_filename)
+    return group_features_dict
+
+
+def split_group_features_by_post_id(post_ids_filename, group_features_filename, new_group_features_filename):
+    print('Prepare post ids')
+    post_ids_file = open(post_ids_filename)
+    post_ids = {}
+    for line in post_ids_file:
+        words = line.strip().split()
+        post_ids[int(words[0])] = 0
+    post_ids_file.close()
+
+    group_features_dict = read_group_features(group_features_filename)
+
+    print('Split group features')
+    new_group_features = {post_id: group_features_dict[post_id] for post_id in group_features_dict if
+                          post_id in post_ids}
+
+    feature_detector.write_features(new_group_features, new_group_features_filename)
 
 
 train_content_filename = '../data/train_content_val.txt'
@@ -179,10 +189,12 @@ test_post_ids_filename = '../data/val_post_ids.txt'
 
 # break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
 
-write_post_id(train_content_filename, train_post_ids_filename)
-write_post_id(test_content_filename, test_post_ids_filename)
+# write_post_id(train_content_filename, train_post_ids_filename)
+# write_post_id(test_content_filename, test_post_ids_filename)
 
-split_group_features_by_post_id(train_post_ids_filename, train_group_features_filename,
-                                '../data/features/train_features_val_group.txt')
-split_group_features_by_post_id(test_post_ids_filename, train_group_features_filename,
-                                '../data/features/val_features_group.txt')
+# print('Split train group features by post ids')
+# split_group_features_by_post_id(train_post_ids_filename, train_group_features_filename,
+#                                 '../data/features/train_features_val_group.txt')
+# print('Split test group features by post ids')
+# split_group_features_by_post_id(test_post_ids_filename, train_group_features_filename,
+#                                 '../data/features/val_features_group.txt')

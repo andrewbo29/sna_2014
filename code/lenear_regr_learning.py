@@ -173,7 +173,7 @@ train_group_features_filename = '../data/features/train_features_val_group.txt'
 
 train_likes_filename = '../data/train_likes_count_val.txt'
 
-test_text_features_filename = '../data/features/test_features_text.txt'
+test_text_features_filename = '../data/features/val_features_text.txt'
 test_freq_words_features_filename = '../data/features/val_features_freq_words.txt'
 test_group_features_filename = '../data/features/val_features_group.txt'
 
@@ -182,8 +182,8 @@ val_likes_filename = '../data/val_likes_count.txt'
 predict_in_filename = '../data/result/predict_likes_count_in.txt'
 predict_out_filename = '../data/result/predict_likes_count_out.txt'
 
-use_text = False
-use_freq_words = False
+use_text = True
+use_freq_words = True
 use_group = True
 
 print('Read train features:')
@@ -193,7 +193,7 @@ train_features_dict, train_likes = read_data(train_text_features_filename, train
 
 print('Read test features:')
 test_features_dict = read_data(test_text_features_filename, test_freq_words_features_filename,
-                               train_group_features_filename, likes_filename=None,
+                               test_group_features_filename, likes_filename=None,
                                is_text=use_text, is_freq_words=use_freq_words, is_group=use_group)
 
 X_train = add_artificial_param(train_features_dict.values())
