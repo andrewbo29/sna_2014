@@ -180,12 +180,64 @@ def split_group_features_by_post_id(post_ids_filename, group_features_filename, 
     feature_detector.write_features(new_group_features, new_group_features_filename)
 
 
+def split_data_by_post_id(data_filename, likes_filename, post_ids_filename, new_data_filename, new_likes_filename):
+    print('Read data file')
+    data_dict = {}
+    data_file = open(data_filename)
+    for line in data_file:
+        post_id = int(line.strip().split('\t')[1])
+        data_dict[post_id] = line
+    data_file.close()
+
+    print('Read likes file')
+    likes_dict = {}
+    likes_file = open(likes_filename)
+    likes_file.readline()
+    for l in likes_file:
+        line = l.strip()
+        if line:
+            symbols = line.split(',')
+            likes_dict[int(symbols[0])] = l
+    likes_file.close()
+
+    print('Read post ids file')
+    post_ids = {}
+    post_ids_file = open(post_ids_filename)
+    post_ids_file.readline()
+    for line in post_ids_file:
+        post_ids[int(line.strip().split(',')[1])] = 0
+    post_ids_file.close()
+
+    print('Split data')
+    new_data_file = open(new_data_filename, 'w')
+    new_likes_file = open(new_likes_filename, 'w')
+    new_likes_file.write('%s,%s\n' % ('\"post_id\"', '\"likes\"'))
+    for post_id in post_ids:
+        if post_id in data_dict and post_id in likes_dict:
+            print(post_id)
+            new_data_file.write('%s' % data_dict[post_id])
+            new_likes_file.write('%s' % likes_dict[post_id])
+    new_data_file.close()
+    new_likes_file.close()
+
+
 train_content_filename = '../data/train_content_val.txt'
+train_likes_count_filename = '../data/train_likes_count_val.txt'
 train_post_ids_filename = '../data/train_post_ids.txt'
 train_group_features_filename = '../data/features/group_features.csv'
 
 test_content_filename = '../data/val_content.txt'
+test_likes_count_filename = '../data/val_likes_count.txt'
 test_post_ids_filename = '../data/val_post_ids.txt'
+
+use_post_ids_filename = '../data/test_ids_4258.csv'
+
+use_post_ids_train_content_filename = '../data/train_content_4258.txt'
+use_post_ids_train_likes_count_filename = '../data/train_likes_count_4258.txt'
+
+use_post_ids_test_content_filename = '../data/test_content_4258.txt'
+use_post_ids_test_likes_count_filename = '../data/test_likes_count_4258.txt'
+
 
 # break_data_train_val(train_content_filename, train_likes_count_filename, 100000)
 
@@ -198,3 +250,10 @@ test_post_ids_filename = '../data/val_post_ids.txt'
 # print('Split test group features by post ids')
 # split_group_features_by_post_id(test_post_ids_filename, train_group_features_filename,
 #                                 '../data/features/val_features_group.txt')
+
+
+split_data_by_post_id(train_content_filename, train_likes_count_filename, use_post_ids_filename,
+                      use_post_ids_train_content_filename, use_post_ids_train_likes_count_filename)
+
+split_data_by_post_id(test_content_filename, test_likes_count_filename, use_post_ids_filename,
+                      use_post_ids_test_content_filename, use_post_ids_test_likes_count_filename)
